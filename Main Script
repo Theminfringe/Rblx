@@ -1,0 +1,74 @@
+local OrbAreaMin = Vector3.new(-36.5, -1.5, -24.5)
+local OrbAreaMax = Vector3.new(13.5, -1.5, 24.5)
+
+local OrbTemplate = game.ReplicatedStorage:FindFirstChild("OrbScript")
+local OrbModelTemplate = game.ReplicatedStorage:FindFirstChild("Orb01Template")
+
+if not OrbTemplate then
+	warn("Kys stupy")
+end
+if not OrbModelTemplate then
+	warn("Die idiot")
+end
+
+local function OrbCreate()
+	local Orb = game.ReplicatedStorage.Orb01Template:Clone()
+	Orb.Name = "Orb 1"
+	Orb.Shape = Enum.PartType.Ball
+	Orb.Size = Vector3.new(1, 1, 1)
+	Orb.Parent = game.Workspace.Orbs.Orb01
+	
+	local x = math.random(OrbAreaMin.X, OrbAreaMax.X)
+	local z = math.random(OrbAreaMin.Z, OrbAreaMax.Z)
+	Orb.Position = Vector3.new(x, -1.5, z)
+
+	if OrbTemplate then
+		local OrbScript = OrbTemplate:Clone()
+		OrbScript.Parent = Orb
+		OrbScript.Enabled = true
+	end
+end
+
+local function walkspeed(player, speedValue)
+	if player.Character then
+		local character = player.Character
+		local humanoid = character:WaitForChild("Humanoid", 5)
+
+		if humanoid then
+			humanoid.WalkSpeed = speedValue
+		end
+	end
+end
+
+game.Players.PlayerAdded:Connect(function(player)
+	player:SetAttribute("MaxOrb", 5)
+	player:SetAttribute("Orb", 0)
+	player:SetAttribute("WalkSpeed", 16)
+	player:SetAttribute("XpUpgrade", 0)
+	player:SetAttribute("Level", 1)
+	player:SetAttribute("OrbValue", 1)
+	player:SetAttribute("Dark", false)
+
+	for i = 1, player:GetAttribute("MaxOrb") do
+		OrbCreate()
+	end
+
+	player:SetAttribute("MaxOrb", 0)
+
+	player:GetAttributeChangedSignal("MaxOrb"):Connect(function()
+		local maxOrb = player:GetAttribute("MaxOrb")
+		if maxOrb > 0 then
+			OrbCreate()
+			player:SetAttribute("MaxOrb", maxOrb - 1)
+		elseif maxOrb == 0 then
+			print("All Orbs Spawned")
+		end
+	end)
+
+	player:GetAttributeChangedSignal("WalkSpeed"):Connect(function()
+		local walkSpeedValue = player:GetAttribute("WalkSpeed")
+		walkspeed(player, walkSpeedValue)
+	end)
+
+	walkspeed(player, player:GetAttribute("WalkSpeed"))
+end)
