@@ -1,0 +1,71 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+local Orb = script.Parent
+
+local function createFloatingText(position, text)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size = UDim2.new(0, 50, 0, 50)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, 1, 0)
+	billboard.AlwaysOnTop = true
+	billboard.Parent = workspace 
+
+	local tempPart = Instance.new("Part")
+	tempPart.Size = Vector3.new(1,1,1)
+	tempPart.Transparency = 1
+	tempPart.Anchored = true
+	tempPart.CanCollide = false
+	tempPart.CFrame = CFrame.new(position)
+	tempPart.Parent = workspace
+
+	billboard.Adornee = tempPart
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.TextColor3 = Orb.Color
+	label.TextStrokeTransparency = 0.5
+	label.Text = text
+	label.Parent = billboard
+
+	local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local moveTween = TweenService:Create(tempPart, tweenInfo, {
+		Position = tempPart.Position + Vector3.new(0, 2, 0)
+	})
+	local fadeTween = TweenService:Create(label, tweenInfo, {
+		TextTransparency = 1,
+		TextStrokeTransparency = 1
+	})
+
+	moveTween:Play()
+	fadeTween:Play()
+
+	game.Debris:AddItem(tempPart, 1)
+	game.Debris:AddItem(billboard, 1)
+end
+
+
+Orb.Touched:Connect(function(hit)
+	local character = hit.Parent
+	if character then
+		local player = Players:GetPlayerFromCharacter(character)
+		if player then
+			local orbs = player:GetAttribute("Orbs")
+			local orbValue = player:GetAttribute("OrbValue") or 1
+			local maxorb = player:GetAttribute("MaxOrb")
+
+			if orbs then
+				-- Create the floating +orbValue text
+				createFloatingText(Orb.Position, "+" .. tostring(orbValue))
+
+				player:SetAttribute("Orbs", orbs + orbValue)
+				player:SetAttribute("MaxOrb", maxorb + 1)
+				Orb:Destroy()
+			else
+				warn(player.Name .. " is missing 'Orbs' attribute")
+			end
+		end
+	end
+end)
