@@ -1,0 +1,125 @@
+local DataStoreService = game:GetService("DataStoreService")
+local Players = game:GetService("Players")
+
+local playerDataStore = DataStoreService:GetDataStore("PlayerData")
+local savingPlayers = {}
+local Autosave = 120
+local attributesToSave = {
+	"Orbs",
+	"Dark",
+	"XpUpgrade",
+	"Level"
+}
+local DefaultAttributes = {
+	Orbs = 0,
+	Dark = false,
+	OrbValue = 1,
+	Level = 1
+	
+}
+local function loadData(player)
+	local key = "Player_" .. player.UserId
+	local data
+
+	local success, err = pcall(function()
+		data = playerDataStore:GetAsync(key)
+	end)
+
+	if success then
+		if data then
+			for _, attributeName in ipairs(attributesToSave) do
+				local value = data[attributeName]
+
+				if value ~= nil then
+					player:SetAttribute(attributeName, value)
+				else
+					print("Fartandpoop")
+					if attributeName == "Orbs" then
+						player:SetAttribute(attributeName, 0)
+					elseif attributeName == "Dark" then
+						player:SetAttribute(attributeName, false)
+					elseif attributeName == "XpUpgrade" then
+						player:SetAttribute(attributeName, 0)
+					elseif attributeName == "Level" then
+						player:SetAttribute(attributeName, 1)
+					end
+				end
+			end
+		else
+			print("fart")
+			player:SetAttribute("Orbs", 0)
+			player:SetAttribute("Dark", false)
+			player:SetAttribute("XpUpgrade", 0)
+			player:SetAttribute("Level", 1)
+		end
+	else
+		warn("Failed to load data for " .. player.Name .. ": " .. err)
+		player:SetAttribute("Orbs", 0)
+		player:SetAttribute("Dark", false)
+		player:SetAttribute("XpUpgrade", 0)
+		player:SetAttribute("Level", 1)
+	end
+end
+
+local function saveData(player)
+	if not player then return end
+	local key = "Player_" .. player.UserId
+	if savingPlayers[player.UserId] then
+		return
+	end
+	savingPlayers[player.UserId] = true
+
+	local success, err = pcall(function()
+		playerDataStore:UpdateAsync(key, function(oldData)
+			oldData = oldData or {}
+			for _, attributeName in ipairs(attributesToSave) do
+				oldData[attributeName] = player:GetAttribute(attributeName)
+			end
+			return oldData
+		end)
+	end)
+
+	if success then
+		print("[✅ Autosave] Player " .. player.Name .. " (" .. player.UserId .. ") saved successfully.")
+	else
+		warn("[⚠️ Autosave Failed] Player " .. player.Name .. " (" .. player.UserId .. "): " .. err)
+	end
+
+	savingPlayers[player.UserId] = nil
+end
+
+local function autoSaveAllPlayers()
+	while true do
+		task.wait(Autosave)
+		for _, player in ipairs(Players:GetPlayers()) do
+			task.spawn(function()
+				saveData(player)
+			end)
+		end
+	end
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	task.spawn(function()
+		saveData(player)
+	end)
+end)
+
+game:BindToClose(function()
+	for _, player in ipairs(Players:GetPlayers()) do
+		saveData(player)
+	end
+end)
+
+Players.PlayerAdded:Connect(function(player)
+	loadData(player)
+
+	for name, defaultValue in pairs(DefaultAttributes) do
+		if player:GetAttribute(name) == nil then
+			player:SetAttribute(name, defaultValue)
+		end
+	end
+end)
+
+
+task.spawn(autoSaveAllPlayers)
