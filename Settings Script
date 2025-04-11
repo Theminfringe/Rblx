@@ -1,0 +1,110 @@
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer -- LocalPlayer
+local Button = script.Parent
+local SettingsScreen = script.Parent.Parent:FindFirstChild("SettingsScreen")
+local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+local Base = game.Workspace.Baseplate
+local Light = game.Lighting
+
+local a = 1
+
+local Appear = {Size = UDim2.new(0.5, 0, 0.5, 0)}
+local Disappear = {Size = UDim2.new(0, 0, 0, 0)}
+
+local function applyDarkMode(dark)
+	if Base and Light then
+		if dark then
+			Base.Color = Color3.new(0, 0, 0)
+			Base.Material = Enum.Material.Plastic
+			Light.ClockTime = 0
+		else
+			Base.Color = Color3.new(0.45098, 1, 0.411765)
+			Base.Material = Enum.Material.Grass
+			Light.ClockTime = 14
+		end
+	end
+end
+
+local Settings = {
+	{name = "Dark Mode", action = function()
+		local dark = player:GetAttribute("Dark") -- always get fresh
+
+		player:SetAttribute("Dark", not dark) -- toggle it
+		applyDarkMode(not dark) -- immediately update UI
+	end},
+}
+
+local function setupGridLayout(parentFrame)
+	for _, child in ipairs(parentFrame:GetChildren()) do
+		if child:IsA("UIGridLayout") then
+			child:Destroy()
+		end
+	end
+
+	local gridLayout = Instance.new("UIGridLayout")
+	gridLayout.CellSize = UDim2.new(0.15, 0, 0.1, 0)
+	gridLayout.CellPadding = UDim2.new(0.05, 0, 0.05, 0)
+	gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	gridLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	gridLayout.Parent = parentFrame
+end
+
+local function SettingsButtonCreation()
+	for _, child in ipairs(SettingsScreen:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+
+	setupGridLayout(SettingsScreen)
+
+	for _, setting in ipairs(Settings) do
+		local NewButton = Instance.new("TextButton")
+		NewButton.Name = "upgrade"
+		NewButton.Text = setting.name
+		NewButton.Parent = SettingsScreen
+		NewButton.Size = UDim2.new(0.15, 0, 0.15, 0)
+
+		NewButton.MouseButton1Click:Connect(setting.action)
+	end
+end
+
+local function ToggleSettingsScreen()
+	if SettingsScreen.Visible then 
+		local tween = TweenService:Create(SettingsScreen, tweenInfo, Disappear)
+		tween:Play()
+		tween.Completed:Connect(function()
+			SettingsScreen.Visible = false
+		end)
+		for _, upgrades in ipairs(SettingsScreen:GetChildren()) do
+			if upgrades:IsA("TextButton") then
+				upgrades.Text = ""
+			end
+		end
+	else 
+		SettingsButtonCreation()
+
+		SettingsScreen.Visible = true
+		SettingsScreen.Size = UDim2.new(0, 0, 0, 0)
+		local tween = TweenService:Create(SettingsScreen, tweenInfo, Appear)
+		tween:Play()
+	end
+end
+
+Button.MouseButton1Click:Connect(ToggleSettingsScreen)
+
+repeat
+	task.wait()
+until player:GetAttribute("Dark") == false or true
+
+print("Dark attribute loaded:", player:GetAttribute("Dark"))
+applyDarkMode(player:GetAttribute("Dark"))
+
+while a > 0 do
+	dark = player:GetAttribute("Dark")
+	task.wait(0.1)
+	print(dark)
+end
