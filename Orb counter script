@@ -1,0 +1,22 @@
+local Text = script.Parent
+
+local function setupPointsDisplay(player)
+	local function update()
+		local Orb = player:GetAttribute("Orbs")
+		if Text and Orb then
+			Text.Text = "Orbs: " .. Orb
+		else
+			print("kys")
+		end
+	end
+
+	player:GetAttributeChangedSignal("Orbs"):Connect(update)
+
+	update()
+end
+
+for _, player in ipairs(game.Players:GetPlayers()) do
+	setupPointsDisplay(player)
+end
+
+game.Players.PlayerAdded:Connect(setupPointsDisplay)
